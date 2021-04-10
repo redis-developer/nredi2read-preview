@@ -47,6 +47,9 @@ Start the app (in separate shell)
 dotnet run
 ```
 
+Access the Swashbuckle/Swagger UI:
+[https://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
+
 ## See Also
 
 Quick Tutorial on Redis' Powerful Modules:
