@@ -1,4 +1,5 @@
-# NRedi2Read-Preview - A Redis + .NET Coding Adventure
+# NRedi2Read-Preview
+## A Redis + .NET Coding Adventure
 
 A collection of .NET REST services for a mythical online bookstore powered by Redis. It uses:
 
@@ -65,5 +66,5 @@ project and tips.
 
 ## Credit
 
-[DaShaun](https://github.com/dashaun) @ [Redis Labs](https://redislabs.com)
-[Guy Royse](https://github.com/guyroyse) @ [Redis Labs](https://redislabs.com)
+- [DaShaun Carter](https://github.com/dashaun) @ [Redis Labs](https://redislabs.com)
+- [Guy Royse](https://github.com/guyroyse) @ [Redis Labs](https://redislabs.com)
