@@ -1,9 +1,7 @@
 using dotnetredis.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using NRediSearch;
-using System.Linq;
-using System;
+using dotnetredis.Services;
 
 namespace dotnetredis.Controllers
 {
@@ -11,106 +9,62 @@ namespace dotnetredis.Controllers
     [Route("/api/books")]
     public class BookController : ControllerBase
     {
+        private readonly BookService _bookService;
+        public BookController(BookService service)
+        {
+            _bookService = service;
+        }
 
         [HttpPost]
-        [Route("create")]
-        public void Create(Book book)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public IActionResult Create(Book book)
         {
-            var db = Program.GetDatabase();
-            var bookKey = $"Book:{book.Id}";
-            var bookAuthorsKey = $"{bookKey}:authors";
+            var newBook = _bookService.Create(book);
+            return Created(newBook.Id,newBook);
+        }
 
-            db.HashSet(bookKey, Program.ToHashEntries(book));
-            foreach (var author in book.Authors)
+        [HttpGet]
+        [Route("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Read(string id)
+        {
+            try
             {
-                db.SetAdd(bookAuthorsKey, author);
+                return Ok(_bookService.Get(id));
+            }
+            catch
+            {
+                return NoContent();
             }
         }
 
         [HttpGet]
-        [Route("read")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult Get(string id)
-        {
-            var db = Program.GetDatabase();
-            var bookKey = $"Book:{id}";
-            var bookAuthorsKey = $"{bookKey}:authors";
-
-            var bookHash = db.HashGetAll(bookKey);
-            if (bookHash.Length == 0) return NotFound();
-
-            var book = Program.ConvertFromRedis<Book>(bookHash);
-
-            var authors = db.SetMembers(bookAuthorsKey);
-            book.Authors = authors.Select(author => author.ToString()).ToArray();
-
-            return Ok(book);
-        }
-
-        [HttpGet]
         [Route("search")]
-        public Book[] Search(string text)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Search(string query)
         {
-            var db = Program.GetDatabase();
-
-            Client client = new Client("books-idx", db);
-
-            var q = new Query(text);
-            var result = client.Search(q);
-
-            var books = result.Documents.Select(d => 
+            try
             {
-                var id = d.Id.Split(":")[1];
-
-                var bookKey = $"Book:{id}";
-                var bookAuthorsKey = $"{bookKey}:authors";
-
-                var bookHash = db.HashGetAll(bookKey);
-                var book = Program.ConvertFromRedis<Book>(bookHash);
-
-                var authors = db.SetMembers(bookAuthorsKey);
-                book.Authors = authors.Select(author => author.ToString()).ToArray();
-
-                return book;
-            }).ToArray();
-
-            return books;
+                return Ok(_bookService.Search(query));
+            }
+            catch
+            {
+                return NoContent();
+            }
         }
 
         [HttpPost]
         [Route("load")]
-        public void Load(Book[] books)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult Load(Book[] books)
         {
             foreach (var book in books)
             {
                 Create(book);
             }
-        }
-
-        [HttpGet]
-        [Route("createIndex")]
-        public void CreateIndex()
-        {
-            Client client = new Client("books-idx", Program.GetDatabase());
-
-            // drop the index, if it doesn't exists, that's fine
-            try
-            {
-                client.DropIndex();
-            }
-            catch {}
-
-            var schema = new Schema();
-            schema.AddSortableTextField("Title");
-            schema.AddTextField("Subtitle");
-            schema.AddTextField("Description");
-
-            Client.ConfiguredIndexOptions options = new Client.ConfiguredIndexOptions(
-                new Client.IndexDefinition( prefixes: new [] { "Book:" } )
-            );
-
-            client.CreateIndex(schema, options);
+            return Ok();
         }
     }
 }

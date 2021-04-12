@@ -1,9 +1,7 @@
 using dotnetredis.Models;
 using Microsoft.AspNetCore.Mvc;
-using NReJSON;
-using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http;
-using System.Linq;
+using dotnetredis.Services;
 
 namespace dotnetredis.Controllers
 {
@@ -11,55 +9,43 @@ namespace dotnetredis.Controllers
     [Route("/api/carts")]
     public class CartController : ControllerBase
     {
-        [HttpGet]
-        [Route("get")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Cart))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult Get(string id)
+        
+        private readonly CartService _cartService;
+        
+        public CartController(CartService service)
         {
-            var db = Program.GetDatabase();
-            var key = $"Cart:{id}";
-
-            var result = db.JsonGet(key);
-
-            if (result.IsNull) return NotFound();
-
-            var cart = JsonConvert.DeserializeObject<Cart>(result.ToString());
-            return Ok(cart);
+            _cartService = service;
+        }
+        
+        [HttpGet]
+        [Route("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Cart))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Get(long id)
+        {
+            var result = _cartService.Get(id);
+            if (result != null)
+            {
+                return Ok(result);
+            }
+            return NoContent();
         }
 
         [HttpPost]
         [Route("addToCart")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult AddToCart(string id, CartItem item)
+        public IActionResult AddToCart(long id, CartItem item)
         {
-            var db = Program.GetDatabase();
-            var key = $"Cart:{id}";
-
-            string json = JsonConvert.SerializeObject(item);
-            db.JsonArrayAppend(key, "Items", json);
+            _cartService.AddToCart(id, item);
             return Ok();
         }
 
         [HttpDelete]
         [Route("removeFromCart")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult RemoveFromCart(string id, string isbn)
+        public IActionResult RemoveFromCart(long id, string isbn)
         {
-            var db = Program.GetDatabase();
-            var key = $"Cart:{id}";
-
-            var result = db.JsonGet(key, "Items");
-
-            if (result.IsNull) return NotFound();
-
-            var cartItems = JsonConvert.DeserializeObject<CartItem[]>(result.ToString());
-            cartItems = cartItems.Where(item => item.Isbn != isbn).ToArray();
-
-            string json = JsonConvert.SerializeObject(cartItems);
-            db.JsonSet(key, json, "Items");
-
+            _cartService.RemoveFromCart(id, isbn);
             return Ok();
         }
 
@@ -68,20 +54,7 @@ namespace dotnetredis.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(long))]
         public IActionResult Create(long userId)
         {
-            var db = Program.GetDatabase();
-
-            var cart = new Cart();
-
-            cart.Id = db.StringIncrement("Cart:id");
-            cart.UserId = userId;
-            cart.Items = new CartItem[] {};
-
-            string key = $"Cart:{cart.Id}";
-            string json = JsonConvert.SerializeObject(cart);
-
-            OperationResult result = db.JsonSet(key, json);
-
-            return Ok(cart.Id);
+            return Ok(_cartService.Create(userId));
         }
     }
 }

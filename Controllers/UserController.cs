@@ -1,4 +1,5 @@
 using dotnetredis.Models;
+using dotnetredis.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 
@@ -8,35 +9,35 @@ namespace dotnetredis.Controllers
     [Route("/api/users")]
     public class UserController : Controller
     {
+        
+        private readonly UserService _userService;
+        
+        public UserController(UserService service)
+        {
+            _userService = service;
+        }
 
         [HttpPost]
         [Route("create")]
         public void Create(User user)
         {
-            var db = Program.GetDatabase();
-            var key = $"User:{user.Id}";
-
-            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-            var userHash = Program.ToHashEntries(user);
-
-            db.HashSet(key, userHash);
+            _userService.Create(user);
         }
 
         [HttpGet]
-        [Route("read")]
+        [Route("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult Get(string id)
+        public IActionResult Get(long id)
         {
-            var db = Program.GetDatabase();
-            var key = $"User:{id}";
-
-            var userHash = db.HashGetAll(key);
-            if (userHash.Length == 0) return NotFound();
-            
-            var user = Program.ConvertFromRedis<User>(userHash);
-
-            return Ok(user);
+            try
+            {
+                return Ok(_userService.Read(id));
+            }
+            catch
+            {
+                return NoContent();
+            }
         }
 
         [HttpPost]
