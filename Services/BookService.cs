@@ -1,11 +1,11 @@
 using System.Linq;
-using dotnetredis.Helpers;
-using dotnetredis.Models;
-using dotnetredis.Providers;
+using NRedi2Read.Helpers;
+using NRedi2Read.Models;
+using NRedi2Read.Providers;
 using NRediSearch;
 using StackExchange.Redis;
 
-namespace dotnetredis.Services
+namespace NRedi2Read.Services
 {
     public class BookService
     {

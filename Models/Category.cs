@@ -1,4 +1,4 @@
-namespace dotnetredis.Models
+namespace NRedi2Read.Models
 {
     public class Category
     {

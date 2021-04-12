@@ -4,7 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
-namespace dotnetredis.Helpers
+namespace NRedi2Read.Helpers
 {
     public static class RedisHelper
     {

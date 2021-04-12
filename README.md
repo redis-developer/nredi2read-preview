@@ -21,8 +21,8 @@ A collection of .NET REST services for a mythical online bookstore powered by Re
 
 To install this example application, run the following commands:
 ```bash
-git clone git@github.com:redis-developer/nredi2read-preview.git --recurse-submodule
-cd nredi2read-preview
+git clone git@github.com:redis-developer/NRedi2Read-preview.git --recurse-submodule
+cd NRedi2Read-preview
 ```
 
 You can also import the code straight into your IDE:

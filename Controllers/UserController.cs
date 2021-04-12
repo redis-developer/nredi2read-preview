@@ -1,9 +1,9 @@
-using dotnetredis.Models;
-using dotnetredis.Services;
+using NRedi2Read.Models;
+using NRedi2Read.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 
-namespace dotnetredis.Controllers
+namespace NRedi2Read.Controllers
 {
     [ApiController]
     [Route("/api/users")]

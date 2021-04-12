@@ -1,7 +1,7 @@
-using dotnetredis.Models;
+using NRedi2Read.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace dotnetredis.Controllers
+namespace NRedi2Read.Controllers
 {
     [ApiController]
     [Route("/api/ratings")]

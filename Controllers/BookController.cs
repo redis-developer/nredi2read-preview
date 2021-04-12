@@ -1,9 +1,9 @@
-using dotnetredis.Models;
+using NRedi2Read.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using dotnetredis.Services;
+using NRedi2Read.Services;
 
-namespace dotnetredis.Controllers
+namespace NRedi2Read.Controllers
 {
     [ApiController]
     [Route("/api/books")]

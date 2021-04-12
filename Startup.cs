@@ -1,5 +1,5 @@
-using dotnetredis.Providers;
-using dotnetredis.Services;
+using NRedi2Read.Providers;
+using NRedi2Read.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
-namespace dotnetredis
+namespace NRedi2Read
 {
     public class Startup
     {
@@ -25,7 +25,7 @@ namespace dotnetredis
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo {Title = "dotnetredis", Version = "v1"});
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = "NRedi2Read-preview", Version = "v1"});
             });
 
             //Add Redis healthcheck
@@ -36,6 +36,7 @@ namespace dotnetredis
             services.AddSingleton<RedisProvider>();
             services.AddTransient<BookService>();
             services.AddTransient<CartService>();
+            services.AddTransient<UserService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,7 +46,7 @@ namespace dotnetredis
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "dotnetredis v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "NRedi2Read-preview v1"));
             }
 
             app.UseHttpsRedirection();

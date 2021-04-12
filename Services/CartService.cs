@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
-using dotnetredis.Models;
-using dotnetredis.Providers;
+using NRedi2Read.Models;
+using NRedi2Read.Providers;
 using Newtonsoft.Json;
 using NReJSON;
 using StackExchange.Redis;
 
-namespace dotnetredis.Services
+namespace NRedi2Read.Services
 {
     public class CartService
     {

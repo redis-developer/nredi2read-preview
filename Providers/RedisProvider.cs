@@ -5,7 +5,7 @@ using System.Threading;
 using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
 
-namespace dotnetredis.Providers
+namespace NRedi2Read.Providers
 {
      public class RedisProvider
     {
