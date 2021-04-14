@@ -66,5 +66,11 @@ namespace NRedi2Read.Controllers
             }
             return Ok();
         }
+        [HttpGet]
+        [Route("createIndex")]
+        public void CreateIndex()
+        {
+            _bookService.CreateBookIndex();
+        }
     }
 }
