@@ -27,17 +27,22 @@ namespace NRedi2Read.Controllers
         [HttpGet]
         [Route("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Get(long id)
         {
             try
             {
-                return Ok(_userService.Read(id));
+                var data = _userService.Read(id);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
             }
             catch
             {
-                return NoContent();
+              // ignore  
             }
+            return NoContent();
         }
 
         [HttpPost]

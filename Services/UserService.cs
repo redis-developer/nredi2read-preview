@@ -26,7 +26,11 @@ namespace NRedi2Read.Services
         {
             var db = _redisProvider.Database();
             var userHash = db.HashGetAll(UserKey(id));
-            return RedisHelper.ConvertFromRedis<User>(userHash);
+            if (userHash?.Length > 0)
+            {
+                return RedisHelper.ConvertFromRedis<User>(userHash);
+            }
+            return null;
         }
 
         private static RedisKey UserKey(long id)
