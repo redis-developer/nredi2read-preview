@@ -29,7 +29,7 @@ namespace NRedi2Read.Services
         public Book Create(Book book)
         {
             var db = _redisProvider.Database();
-            db.HashSetAsync(BookKey(book.Id), RedisHelper.ToHashEntries(book));
+            db.HashSet(BookKey(book.Id), RedisHelper.ToHashEntries(book));
             foreach (var author in book.Authors)
             {
                 db.SetAdd(BookAuthorKey(book.Id), author);
