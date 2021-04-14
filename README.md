@@ -1,6 +1,8 @@
 # NRedi2Read-Preview
 ## A Redis + .NET Coding Adventure
 
+![Pattern View](overview.png)
+
 A collection of .NET REST services for a mythical online bookstore powered by Redis. It uses:
 
 * [StackExchange.Redis](https://stackexchange.github.io/StackExchange.Redis/)
