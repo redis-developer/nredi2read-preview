@@ -2,6 +2,9 @@ using NRedi2Read.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using NRedi2Read.Services;
+using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 namespace NRedi2Read.Controllers
 {
@@ -15,39 +18,81 @@ namespace NRedi2Read.Controllers
             _bookService = service;
         }
 
+
+        /// <summary>
+        /// Creates a book object in the Redis Database
+        /// </summary>
+        /// <param name="book"></param>
+        /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        public IActionResult Create(Book book)
+        public async Task<IActionResult> Create(Book book)
         {
-            var newBook = _bookService.Create(book);
-            return Created(newBook.Id,newBook);
+            var newBook = await _bookService.Create(book);
+            return Created(newBook.Id, newBook);
         }
 
+
+        /// <summary>
+        /// Paginates books based on the current page (0 indexed) and the Page Size
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetBooks([FromQuery] int page = 0,[FromQuery] int pageSize = 10 )
+        {
+            return Ok(await _bookService.PaginateBooks("*", page, pageSize));
+        }
+
+
+        /// <summary>
+        /// Gets a single book
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public IActionResult Read(string id)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> Read(string id)
         {
             try
             {
-                return Ok(_bookService.Get(id));
+                var result = await _bookService.Get(id);
+                if (result != null)
+                {
+                    return Ok(result);
+                }
+                else
+                {
+                    return NotFound();
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                return NoContent();
+                return Problem(ex.ToString());
             }
         }
 
+        /// <summary>
+        /// Searches for books matching the given query see the
+        /// <see href="https://oss.redislabs.com/redisearch/Commands/#ftsearch">RediSearch</see>
+        /// docs for details on how to structure queries.
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public IActionResult Search(string query)
+        public async Task<IActionResult> Search(string query)
         {
             try
             {
-                return Ok(_bookService.Search(query));
+                return Ok(await _bookService.Search(query));
             }
             catch
             {
@@ -55,22 +100,30 @@ namespace NRedi2Read.Controllers
             }
         }
 
+        /// <summary>
+        /// Bulk loads a set of books into Redis
+        /// </summary>
+        /// <param name="books"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("load")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult Load(Book[] books)
+        public async Task<IActionResult> Load(Book[] books)
         {
-            foreach (var book in books)
-            {
-                Create(book);
-            }
-            return Ok();
+            await _bookService.CreateBulk(books);
+            return Accepted();
         }
+
+        /// <summary>
+        /// Creates the Search index
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("createIndex")]
-        public void CreateIndex()
+        public async Task<IActionResult> CreateIndex()
         {
-            _bookService.CreateBookIndex();
+            await _bookService.CreateBookIndex();
+            return Accepted();
         }
     }
 }

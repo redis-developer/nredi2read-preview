@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using System.Threading;
 
 namespace NRedi2Read
 {
@@ -22,6 +23,7 @@ namespace NRedi2Read
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            NReJSON.NReJSONSerializer.SerializerProxy = new NewtonsoftSeralizeProxy();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -37,6 +39,7 @@ namespace NRedi2Read
             services.AddTransient<BookService>();
             services.AddTransient<CartService>();
             services.AddTransient<UserService>();
+            services.AddTransient<BookRatingService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -55,6 +58,14 @@ namespace NRedi2Read
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+
+            ThreadPool.QueueUserWorkItem(async (state) =>
+            {
+                await SeedScript.SeedDatabase(
+                    app.ApplicationServices.GetService<BookService>(),
+                    app.ApplicationServices.GetService<UserService>(),
+                    app.ApplicationServices.GetService<CartService>());
             });
         }
     }

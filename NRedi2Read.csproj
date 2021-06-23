@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>98e80674-1adc-4b07-a069-4c55bda3275e</UserSecretsId>
-    <RootNamespace>nredi2read-preview</RootNamespace>
+    <RootNamespace>NRedi2Read</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
