@@ -69,19 +69,13 @@ namespace NRedi2Read.Services
         public async Task<IEnumerable<string>> GetBulk(IEnumerable<string> ids)
         {
             var db = _redisProvider.Database;
-            var tasks = new List<Task<string>>();
+            var tasks = new List<Task<bool>>();
             foreach (var id in ids)
             {
-                tasks.Add(db.JsonGetAsync<string>(UserKey(id), "Id"));
+                tasks.Add(db.KeyExistsAsync(UserKey(id)));
             }
-            try
-            {
-                await Task.WhenAll(tasks);
-            }
-            catch (RedisKeyNotFoundException)
-            {
-            }
-            return tasks.Where(t=>!t.IsFaulted).Select(t => t.Result);
+            await Task.WhenAll(tasks);
+            return ids.Where((id, index) => tasks[index].Result);
         }
 
         /// <summary>
