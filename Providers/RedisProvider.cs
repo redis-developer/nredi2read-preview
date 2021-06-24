@@ -7,7 +7,11 @@ using StackExchange.Redis;
 
 namespace NRedi2Read.Providers
 {
-     public class RedisProvider
+    /// <summary>
+    /// Redis Provider class with some reconnection logic inspired by:
+    /// https://docs.microsoft.com/en-us/azure/azure-cache-for-redis/cache-dotnet-how-to-use-azure-redis-cache#handle-redisconnectionexception-and-socketexception-by-reconnecting
+    /// </summary>
+    public class RedisProvider
     {
         private readonly IConfiguration _configuration;
         private const string SecretName = "CacheConnection";
@@ -127,9 +131,9 @@ namespace NRedi2Read.Providers
                 }
         }
 
-        public IDatabase Database()
+        public IDatabase Database
         {
-            return BasicRetry(() => Connection.GetDatabase());
+            get { return BasicRetry(() => Connection.GetDatabase()); }
         }
 
         public EndPoint[] GetEndPoints()

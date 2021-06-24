@@ -1,10 +1,19 @@
+using NRedi2Read.Helpers;
+
 namespace NRedi2Read.Models
 {
     public class BookRating
     {
-        public long Id { get; set; }
-        public long userId { get; set; }
-        public long bookId { get; set; }
-        public int rating { get; set; }
+        [RedisHashField("id")]
+        public string Id { get; set; }
+
+        [RedisHashField("userId")]
+        public string UserId { get; set; }
+
+        [RedisHashField("bookId")]
+        public string BookId { get; set; }
+
+        [RedisHashField("rating")]
+        public int Rating { get; set; }
     }
 }

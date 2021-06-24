@@ -8,40 +8,68 @@ namespace NRedi2Read.Helpers
 {
     public static class RedisHelper
     {
-        public static HashEntry[] ToHashEntries(object obj)
+        /// <summary>
+        /// converts an object to a set of hash entries for consumption by the StackeExchange libraries SetHash methods
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static IEnumerable<HashEntry> AsHashEntries(this object obj)
         {
-            var properties = obj.GetType().GetProperties();
-            return properties
-                .Where(x => x.GetValue(obj) != null)
-                .Select
-                (
-                    property =>
+            var properties = obj
+                .GetType()
+                .GetProperties()
+                .Where(x => x.GetValue(obj) != null);
+            foreach (var property in properties)
+            {
+                var redisFieldInfo = property.CustomAttributes
+                    .FirstOrDefault(x => x.AttributeType.Name == nameof(RedisHashFieldAttribute));
+                var propertyName = property.Name;
+
+                if (redisFieldInfo != null)
+                {
+                    propertyName = redisFieldInfo.ConstructorArguments[0].Value.ToString();
+                }
+
+                var propertyValue = property.GetValue(obj);
+                if (property.PropertyType.GetInterfaces().Contains(typeof(IEnumerable<string>)))
+                {
+                    var enumerable = (propertyValue as IEnumerable<object>).ToArray();
+                    for (var i = 0; i < enumerable.Count(); i++)
                     {
-                        var propertyValue = property.GetValue(obj);
-
-                        if (propertyValue != null)
-                        {
-                            var hashValue = propertyValue is IEnumerable<object>
-                                ? JsonConvert.SerializeObject(propertyValue)
-                                : propertyValue.ToString();
-                            return new HashEntry(property.Name, hashValue);
-                        }
-
-                        return new HashEntry(property.Name, RedisValue.Null);
-
-
+                        var name = $"{propertyName}.[{i}]";
+                        yield return new HashEntry(name, enumerable[i].ToString());
                     }
-                )
-                .ToArray();
+                }
+                else
+                {
+                    yield return new HashEntry(propertyName, propertyValue.ToString());
+                }
+            }
         }
         
+        /// <summary>
+        /// Converts a set of hash entries to a POCO
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="hashEntries"></param>
+        /// <returns></returns>
         public static T ConvertFromRedis<T>(HashEntry[] hashEntries)
         {
             var properties = typeof(T).GetProperties();
             var obj = Activator.CreateInstance(typeof(T));
             foreach (var property in properties)
             {
-                HashEntry entry = hashEntries.FirstOrDefault(g => g.Name.ToString().Equals(property.Name));
+                var redisFieldInfo = property.CustomAttributes
+                    .FirstOrDefault(x => x.AttributeType.Name == nameof(RedisHashFieldAttribute));
+                var redisPropertyName = property.Name;
+
+                if (redisFieldInfo != null)
+                {
+                    redisPropertyName = redisFieldInfo.ConstructorArguments[0].Value.ToString();
+                }
+
+                HashEntry entry = hashEntries.FirstOrDefault(g => g.Name.ToString().Equals(redisPropertyName));
+
                 if (entry.Equals(new HashEntry())) continue;
                 if (property.PropertyType == typeof(String[]))
                 {
