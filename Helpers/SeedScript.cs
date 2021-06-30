@@ -14,8 +14,8 @@ namespace NRedi2Read
         /// <summary>
         /// seeds the database with lots of fun stuff
         /// </summary>
-        /// <param name="bookService"></param>
-        /// <param name="userService"></param>
+        /// <param name="bookService">the service for books</param>
+        /// <param name="userService">the service for users</param>
         /// <param name="cartService"></param>
         /// <returns></returns>
         public static async Task<bool> SeedDatabase(BookService bookService, UserService userService, CartService cartService)

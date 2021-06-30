@@ -4,6 +4,7 @@ using NRedi2Read.Models;
 using NRedi2Read.Providers;
 using Newtonsoft.Json;
 using NReJSON;
+using NRediSearch;
 using StackExchange.Redis;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -75,6 +76,11 @@ namespace NRedi2Read.Services
         public async Task<string> Create(string userId)
         {
             var db = _redisProvider.Database;
+            var currentCart = await GetCartForUser(userId);
+            if (currentCart != null)
+            {
+                return currentCart.Id;
+            }
             var user = await db.JsonGetAsync<User>(UserService.UserKey(userId));
             var newCartId = (await db.StringIncrementAsync("Cart:id")).ToString(); // get the cart id by incrmenting the current highestcart id
             var cart = new Cart
@@ -111,6 +117,46 @@ namespace NRedi2Read.Services
             await db.JsonSetAsync(UserService.UserKey(user.Id), user.Books, "Books");
             await db.JsonSetAsync(CartKey(id), true, "Closed");
             return true;
+        }
+
+        /// <summary>
+        /// Returns cart that has not been closed for user, if one exists, otherwise returns null
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<Cart> GetCartForUser(string userId)
+        {
+            var db = _redisProvider.Database;
+            var client = new Client("cart-idx", db);
+            var query = new Query($"@userId: {userId}");
+            query.ReturnFields("$.Id","$.Closed");
+            query.Limit(0,1);
+            var result = await client.SearchAsync(query);
+            if (result.Documents.Count < 1)
+            {
+                return null;
+            }
+            var cart = result.Documents.Where(x => x["$.Closed"] != "true").FirstOrDefault();
+            if(cart == null)
+            {
+                return null;
+            }
+            var idStr = result.Documents[0]["$.Id"].ToString();
+            return await Get(idStr.Substring(1,idStr.Length-2));
+        }
+
+        public void CreateCartIndex()
+        {
+            var db = _redisProvider.Database;
+            try
+            {
+                db.Execute("FT.DROPINDEX", "cart-idx");
+            }
+            catch (Exception)
+            {
+                //do nothing, the index didn't exist
+            }
+            db.Execute("FT.CREATE", "cart-idx", "ON", "JSON", "PREFIX", "1", "Cart:", "SCHEMA", "$.UserId", "AS", "userId", "TEXT");
         }
 
         private RedisKey CartKey(string id)

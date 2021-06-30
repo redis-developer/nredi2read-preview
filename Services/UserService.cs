@@ -1,11 +1,14 @@
 using Microsoft.Extensions.Configuration;
 using NRedi2Read.Models;
 using NRedi2Read.Providers;
+using NRediSearch;
 using NReJSON;
 using StackExchange.Redis;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using static NRediSearch.Client;
 
 namespace NRedi2Read.Services
 {
@@ -97,6 +100,63 @@ namespace NRedi2Read.Services
         public static RedisKey UserKey(string id)
         {
             return new(new User().GetType().Name + ":" + id);
+        }
+
+        public void CreateUserIndex()
+        {
+            var db = _redisProvider.Database;
+            try
+            {
+                db.Execute("FT.DROPINDEX", "user-idx");
+            }
+            catch
+            {
+                // do nothing
+            }
+            db.Execute("FT.CREATE", "user-idx", "ON", "JSON", "PREFIX", "1", "User:", "SCHEMA", "$.Email", "AS", "email", "TAG", "$.Password", "AS", "password", "TAG");
+        }
+
+        public async Task<User> ValidateUserCredentials(string email, string password){
+            var db = _redisProvider.Database;
+            var client = new Client("user-idx", db);
+            var user = await GetUserWithEmail(email);
+            if(user == null || !BCrypt.Net.BCrypt.Verify(password,user.Password))
+            {
+                return null;
+            }
+            return new User { Email = user.Email, Name = user.Name, Id = user.Id };
+        }
+
+        public async Task<User> GetUserWithEmail(string email)
+        {
+            var db = _redisProvider.Database;
+            var searchClient = new Client("user-idx", db);
+            var escapedEmail = string.Format(@"\""{0}\""", RediSearchEscape(email));
+
+            var query = new Query($"@email:{{{escapedEmail}}}");
+
+            var result = (await searchClient.SearchAsync(query)).Documents.FirstOrDefault();
+            if (result == null)
+            {
+                return null;
+            }
+            var user = await db.JsonGetAsync<User>(result.Id);
+            return user;
+        }
+
+        public string RediSearchEscape(string inputString)
+        {
+            var chars = new char[] { ',', '.', '<', '>', '{', '}', '[', ']', '"', '\'', ':', ';', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '+', '=', '~' };
+            var sb = new StringBuilder();
+            foreach(char c in inputString)
+            {
+                if (chars.Contains(c))
+                {
+                    sb.Append("\\");
+                }
+                sb.Append(c);
+            }
+            return sb.ToString();
         }
     }
 }
