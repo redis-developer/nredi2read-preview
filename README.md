@@ -61,7 +61,7 @@ You can then access the UI at [http://localhost:5000/](http://localhost:5000/?#)
 You can either make your own user profile, or login using one of the profiles from `/redi2read-data/users/users.json`
 
 Access the Swashbuckle/Swagger UI:
-[https://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
+[http://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
 
 ## See Also
 
