@@ -43,7 +43,7 @@ dotnet user-secrets set CacheConnection "localhost,abortConnect=false,ssl=false,
 The User API uses the [BCRYPT](https://en.wikipedia.org/wiki/Bcrypt) algorithm to hash its passwords. This app will also bulk-load 1000 users when it starts up (if they are not already in the database). Because of these two pieces in conjunction starting up can take a while (a couple minutes) the first time the server is started up, unless you artificially decrease the amount of work the BCRYPT algorithm has to do. If you are only using the stuff in here for demonstration purposes you can decrease the amount of work the BCRYPT algorithm does by setting the `BCryptWorkFactor` configuration variable you can do that locally with:
 
 ```bash
-dotnet user-secrets set BCryptWorkFactor 4
+dotnet user-secrets set "BCryptWorkFactor" "4"
 ```
 
 Start the Docker Compose application:
