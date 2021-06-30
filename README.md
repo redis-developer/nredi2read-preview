@@ -23,7 +23,7 @@ A collection of .NET REST services for a mythical online bookstore powered by Re
 
 To install this example application, run the following commands:
 ```bash
-git clone git@github.com:redis-developer/NRedi2Read-preview.git --recurse-submodule
+git clone git@github.com:redis-developer/NRedi2Read-preview.git
 cd NRedi2Read-preview
 ```
 
@@ -46,9 +46,9 @@ The User API uses the [BCRYPT](https://en.wikipedia.org/wiki/Bcrypt) algorithm t
 dotnet user-secrets set "BCryptWorkFactor" "4"
 ```
 
-Start the Docker Compose application:
+Start up Docker:
  ```bash
- docker-compose up
+ docker run -p 6379:6379 -it --rm redislabs/redismod:edge
  ```
 
 Start the app (in separate shell)
@@ -56,7 +56,9 @@ Start the app (in separate shell)
 dotnet run
 ```
 
-Access the UI at [http://localhost:5000/](http://localhost:5000/?#)
+You can then access the UI at [http://localhost:5000/](http://localhost:5000/?#)
+
+You can either make your own user profile, or login using one of the profiles from `/redi2read-data/users/users.json`
 
 Access the Swashbuckle/Swagger UI:
 [https://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
