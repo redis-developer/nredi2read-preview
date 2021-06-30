@@ -20,6 +20,8 @@ namespace NRedi2Read
         private IConfiguration Configuration { get; }
         private const string SecretName = "CacheConnection";
 
+        private const string DEFAULT_CONNECTION_STRING = "localhost,abortConnect=false,ssl=false,allowAdmin=false,password=";
+
         public const string COOKIE_AUTH_SCHEME = "CookieAuthentication";
 
         public Startup(IConfiguration configuration)
@@ -38,9 +40,11 @@ namespace NRedi2Read
                 c.SwaggerDoc("v1", new OpenApiInfo {Title = "NRedi2Read-preview", Version = "v1"});
             });
 
+            var connectionString = !string.IsNullOrEmpty(Configuration[SecretName]) ? Configuration[SecretName] : DEFAULT_CONNECTION_STRING;
+
             //Add Redis healthcheck
             services.AddHealthChecks()
-                .AddRedis(Configuration[SecretName]);
+                .AddRedis(connectionString);
             
             //services.Configure<Redis>(Configuration);
             services.AddSingleton<RedisProvider>();
