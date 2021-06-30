@@ -56,6 +56,8 @@ Start the app (in separate shell)
 dotnet run
 ```
 
+Access the UI at [http://localhost:5000/](http://localhost:5000/?#)
+
 Access the Swashbuckle/Swagger UI:
 [https://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
 
@@ -80,3 +82,4 @@ project and tips.
 
 - [DaShaun Carter](https://github.com/dashaun) @ [Redis Labs](https://redislabs.com)
 - [Guy Royse](https://github.com/guyroyse) @ [Redis Labs](https://redislabs.com)
+- [Steve Lorello](https://github.com/slorello89) @ [Redis Labs](https://redislabs.com)
