@@ -131,7 +131,7 @@ namespace NRedi2Read.Services
         {
             var db = _redisProvider.Database;
             var searchClient = new Client("user-idx", db);
-            var escapedEmail = string.Format(@"\""{0}\""", RediSearchEscape(email));
+            var escapedEmail = RediSearchEscape(email);
 
             var query = new Query($"@email:{{{escapedEmail}}}");
 
