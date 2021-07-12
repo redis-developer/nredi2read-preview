@@ -13,7 +13,7 @@ namespace NRedi2Read.Helpers
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static IEnumerable<HashEntry> AsHashEntries(this object obj)
+        public static IEnumerable<HashEntry> AsHashEntries(this object obj, string propertyNamePrefix= "")
         {
             var properties = obj
                 .GetType()
@@ -36,13 +36,13 @@ namespace NRedi2Read.Helpers
                     var enumerable = (propertyValue as IEnumerable<object>).ToArray();
                     for (var i = 0; i < enumerable.Count(); i++)
                     {
-                        var name = $"{propertyName}.[{i}]";
+                        var name = $"{propertyNamePrefix}{propertyName}.[{i}]";
                         yield return new HashEntry(name, enumerable[i].ToString());
                     }
                 }
                 else
                 {
-                    yield return new HashEntry(propertyName, propertyValue.ToString());
+                    yield return new HashEntry($"{propertyNamePrefix}{propertyName}", propertyValue.ToString());
                 }
             }
         }

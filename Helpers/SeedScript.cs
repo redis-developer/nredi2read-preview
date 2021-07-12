@@ -75,7 +75,7 @@ namespace NRedi2Read
                 users.AddRange(JsonConvert.DeserializeObject<User[]>(await File.ReadAllTextAsync(file)));
             }
 
-            var currentUsers = await userService.GetBulk(users.Select(u => u.Id));
+            var currentUsers = await userService.CheckBulk(users.Select(u => u.Id));
             var usersToCreate = users.Where(u => !currentUsers.Contains(u.Id)).ToList();
 
             Console.WriteLine($"Creating {usersToCreate.Count} users");
