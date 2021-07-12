@@ -21,13 +21,15 @@
     <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="6.4.5" />
     <PackageReference Include="StackExchange.Redis.Extensions.Newtonsoft" Version="6.4.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+    <PackageReference Include="NRediSearch" Version="2.2.62" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\StackExchange.Redis\src\NRediSearch\NRediSearch.csproj" />
   </ItemGroup>
-  <!--<Target Name="BuildClientApp" AfterTargets="Build">
+  <!-- uncomment below to build the client app -->
+  <!-- <Target Name="BuildClientApp" AfterTargets="Build">    
     <Exec WorkingDirectory="./clientapp" command="yarn build" />
-  </Target>-->
+  </Target> --> 
 
 </Project>

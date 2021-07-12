@@ -40,8 +40,7 @@ export default {
     ...mapActions('context', [
       'logout'
     ]),
-    onclick(evt){
-        console.log("whale hello there");
+    onclick(evt){        
         evt.preventDefault();
     },
     showCartModal(){

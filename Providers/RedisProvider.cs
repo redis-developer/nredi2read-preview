@@ -15,7 +15,7 @@ namespace NRedi2Read.Providers
     {
         private readonly IConfiguration _configuration;
         private const string SecretName = "CacheConnection";
-        
+        const string DEFAULT_CONNECTION_STRING = "localhost";
         private static Lazy<ConnectionMultiplexer> _lazyConnection;
         private static long _lastReconnectTicks = DateTimeOffset.MinValue.UtcTicks;
         private static DateTimeOffset _firstErrorTime = DateTimeOffset.MinValue;
@@ -36,7 +36,8 @@ namespace NRedi2Read.Providers
 
         private Lazy<ConnectionMultiplexer> CreateConnection()
         {
-            return new(() => ConnectionMultiplexer.Connect(_configuration[SecretName]));
+            var connectionString = !string.IsNullOrEmpty(_configuration[SecretName]) ? _configuration[SecretName] : DEFAULT_CONNECTION_STRING;
+            return new(() => ConnectionMultiplexer.Connect(connectionString));
         }
         
         private static void CloseConnection(Lazy<ConnectionMultiplexer> oldConnection)
