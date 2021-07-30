@@ -41,9 +41,18 @@ namespace NRedi2Read.Controllers
         /// <returns></returns>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetBooks([FromQuery] int page = 0,[FromQuery] int pageSize = 10 )
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> GetBooks([FromQuery] int page = 0, [FromQuery] int pageSize = 10, [FromQuery] string q = "*")
         {
-            return Ok(await _bookService.PaginateBooks("*", page, pageSize));
+            try
+            {
+                return Ok(await _bookService.PaginateBooks(q, page, pageSize));
+            }
+            catch (Exception)
+            {
+
+                return NoContent();
+            }
         }
 
 

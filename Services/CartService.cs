@@ -1,22 +1,24 @@
-using System;
-using System.Linq;
+using NRedi2Read.Helpers;
 using NRedi2Read.Models;
 using NRedi2Read.Providers;
-using Newtonsoft.Json;
-using NReJSON;
+using NRediSearch;
 using StackExchange.Redis;
-using System.Threading.Tasks;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NRedi2Read.Services
 {
     public class CartService
     {
         private readonly RedisProvider _redisProvider;
+        private readonly UserService _userService;
 
-        public CartService(RedisProvider redisProvider)
+        public CartService(RedisProvider redisProvider, UserService userService)
         {
             _redisProvider = redisProvider;
+            _userService = userService;
         }
 
         /// <summary>
@@ -27,10 +29,28 @@ namespace NRedi2Read.Services
         public async Task<Cart> Get(string id)
         {
             var db = _redisProvider.Database;
-            var result = await db.JsonGetAsync(CartKey(id));
-            if (result.IsNull) return null;
-            var cart = JsonConvert.DeserializeObject<Cart>(result.ToString() ?? throw new InvalidOperationException());
+            var result = await db.HashGetAllAsync(CartKey(id));
+            var cart = RedisHelper.ConvertFromRedis<Cart>(result);
+            cart.Items = ParseCartItems(result).ToArray();
             return cart;
+        }
+
+        private IEnumerable<CartItem> ParseCartItems(IEnumerable<HashEntry> entries)
+        {
+            var uniqueIds = new HashSet<string>();
+            entries
+                .Where(s => s.Name.ToString().Split(':').Length > 2)
+                .Select(s => s.Name.ToString().Split(":")[1]).ToList()
+                .ForEach(x => uniqueIds.Add(x));
+            foreach(var id in uniqueIds)
+            {
+                var isbn = entries.FirstOrDefault(e => e.Name == $"items:{id}:Isbn").Value;
+                var price = entries.FirstOrDefault(e => e.Name == $"items:{id}:Price").Value;
+                var quantity = (long)entries.FirstOrDefault(e => e.Name == $"items:{id}:Quantity").Value;
+                yield return new CartItem { Isbn = isbn, Quantity = quantity, Price=price};
+            }
+            
+            
         }
 
         /// <summary>
@@ -43,13 +63,13 @@ namespace NRedi2Read.Services
         public async Task AddToCart(string id, CartItem item)
         {
             var db = _redisProvider.Database;
-            var closed = await db.JsonGetAsync<bool>(CartKey(id), "Closed");
+            var closed = bool.Parse(await db.HashGetAsync(CartKey(id), "Closed"));
             if (closed)
             {
                 throw new InvalidOperationException("Cart has already been closed out");
             }
-            string json = JsonConvert.SerializeObject(item);
-            await db.JsonArrayAppendAsync(CartKey(id), "Items", json);
+            var key = CartKey(id);
+            await db.HashSetAsync(key, item.AsHashEntries(CartItemKey(id, item.Isbn)).ToArray());            
         }
 
         /// <summary>
@@ -61,9 +81,7 @@ namespace NRedi2Read.Services
         public async Task RemoveFromCart(string id, string isbn)
         {
             var db = _redisProvider.Database;
-            var cartItems = await db.JsonGetAsync<CartItem[]>(CartKey(id), "Items");
-            cartItems = cartItems.Where(item => item.Isbn != isbn).ToArray();
-            await db.JsonSetAsync(CartKey(id), cartItems, "Items");
+            await db.HashDeleteAsync(CartKey(id), CartItemHashFields(id,isbn));
         }
 
         /// <summary>
@@ -75,15 +93,20 @@ namespace NRedi2Read.Services
         public async Task<string> Create(string userId)
         {
             var db = _redisProvider.Database;
-            var user = await db.JsonGetAsync<User>(UserService.UserKey(userId));
+            var currentCart = await GetCartForUser(userId);
+            if (currentCart != null)
+            {
+                return currentCart.Id;
+            }
+            var user = await _userService.Read(userId);
             var newCartId = (await db.StringIncrementAsync("Cart:id")).ToString(); // get the cart id by incrmenting the current highestcart id
             var cart = new Cart
             {
                 Id = newCartId,
                 UserId = userId, 
-                Items = Array.Empty<CartItem>()
+                Items = null
             };
-            await db.JsonSetAsync(CartKey(cart.Id), cart);
+            await db.HashSetAsync(CartKey(cart.Id), cart.AsHashEntries().ToArray());            
             return cart.Id;
         }
 
@@ -96,26 +119,71 @@ namespace NRedi2Read.Services
         public async Task<bool> Checkout(string id)
         {
             var db = _redisProvider.Database;
-            var cart = await db.JsonGetAsync<Cart>(CartKey(id));
-            var user = await db.JsonGetAsync<User>(UserService.UserKey(cart.UserId));
-
-            if (user.Books == null)
-            {
-                user.Books = new List<string>(cart.Items.Select(x => x.Isbn));
-            }
-            else
-            {
-                user.Books.AddRange(cart.Items.Select(x => x.Isbn));
-            }
-
-            await db.JsonSetAsync(UserService.UserKey(user.Id), user.Books, "Books");
-            await db.JsonSetAsync(CartKey(id), true, "Closed");
+            
+            var cart = await Get(id);
+            
+            await _userService.AddBooks(cart.UserId, new List<string>(cart.Items.Select(x => x.Isbn)).ToArray());            ;
+            await db.HashSetAsync(CartKey(id), "Closed", true);
             return true;
         }
+
+        /// <summary>
+        /// Returns cart that has not been closed for user, if one exists, otherwise returns null
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<Cart> GetCartForUser(string userId)
+        {
+            var db = _redisProvider.Database;
+            var client = new Client("cart-idx", db);
+            var query = new Query($"@UserId: {userId}");
+            query.ReturnFields("Id","Closed");
+            query.Limit(0,1);
+            var result = await client.SearchAsync(query);
+            if (result.Documents.Count < 1)
+            {
+                return null;
+            }
+            var cart = result.Documents.Where(x => x["Closed"] != "true").FirstOrDefault();
+            if(cart == null)
+            {
+                return null;
+            }
+            var idStr = result.Documents[0]["Id"].ToString();
+            return await Get(idStr);
+        }
+
+        public void CreateCartIndex()
+        {
+            var db = _redisProvider.Database;
+            var client = new Client("cart-idx", db);
+            try
+            {
+                db.Execute("FT.DROPINDEX", "cart-idx");
+            }
+            catch (Exception)
+            {
+                //do nothing, the index didn't exist
+            }
+            var schema = new Schema();
+            schema.AddSortableTextField("UserId");
+            var options = new Client.ConfiguredIndexOptions(new Client.IndexDefinition(prefixes: new[] { "Cart:" }));
+            client.CreateIndex(schema, options);
+        }
+
+        private RedisValue[] CartItemHashFields(string cartId, string isbn)
+        {
+            return new RedisValue[] { $"{CartItemKey(cartId, isbn)}:Isbn", $"{CartItemKey(cartId, isbn)}:Price", $"{CartItemKey(cartId, isbn)}:Quantity" };
+        }        
 
         private RedisKey CartKey(string id)
         {
             return new(new Cart().GetType().Name + ":" + id);
+        }
+
+        private RedisKey CartItemKey(string cartId, string isbn)
+        {
+            return $"items:{isbn}:";
         }
     }
 }

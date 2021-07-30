@@ -23,7 +23,7 @@ A collection of .NET REST services for a mythical online bookstore powered by Re
 
 To install this example application, run the following commands:
 ```bash
-git clone git@github.com:redis-developer/NRedi2Read-preview.git --recurse-submodule
+git clone git@github.com:redis-developer/NRedi2Read-preview.git
 cd NRedi2Read-preview
 ```
 
@@ -43,12 +43,12 @@ dotnet user-secrets set CacheConnection "localhost,abortConnect=false,ssl=false,
 The User API uses the [BCRYPT](https://en.wikipedia.org/wiki/Bcrypt) algorithm to hash its passwords. This app will also bulk-load 1000 users when it starts up (if they are not already in the database). Because of these two pieces in conjunction starting up can take a while (a couple minutes) the first time the server is started up, unless you artificially decrease the amount of work the BCRYPT algorithm has to do. If you are only using the stuff in here for demonstration purposes you can decrease the amount of work the BCRYPT algorithm does by setting the `BCryptWorkFactor` configuration variable you can do that locally with:
 
 ```bash
-dotnet user-secrets set BCryptWorkFactor 4
+dotnet user-secrets set "BCryptWorkFactor" "4"
 ```
 
-Start the Docker Compose application:
+Start up Docker:
  ```bash
- docker-compose up
+ docker run -p 6379:6379 -it --rm redislabs/redismod:edge
  ```
 
 Start the app (in separate shell)
@@ -56,8 +56,12 @@ Start the app (in separate shell)
 dotnet run
 ```
 
+You can then access the UI at [http://localhost:5000/](http://localhost:5000/?#)
+
+You can either make your own user profile, or login using one of the profiles from `/redi2read-data/users/users.json`
+
 Access the Swashbuckle/Swagger UI:
-[https://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
+[http://localhost:5001/swagger/index.html](https://localhost:5001/swagger/index.html)
 
 ## See Also
 
@@ -80,3 +84,4 @@ project and tips.
 
 - [DaShaun Carter](https://github.com/dashaun) @ [Redis Labs](https://redislabs.com)
 - [Guy Royse](https://github.com/guyroyse) @ [Redis Labs](https://redislabs.com)
+- [Steve Lorello](https://github.com/slorello89) @ [Redis Labs](https://redislabs.com)

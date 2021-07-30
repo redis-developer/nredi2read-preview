@@ -53,7 +53,8 @@ namespace NRedi2Read.Controllers
             try
             {
                 await _cartService.AddToCart(id, item);
-                return Ok();
+                var cart = await _cartService.Get(id);
+                return Ok(cart);
             }
             catch (InvalidOperationException)
             {
@@ -89,7 +90,8 @@ namespace NRedi2Read.Controllers
         {
             try
             {
-                return Ok(await _cartService.Create(userId));
+                var cartId = await _cartService.Create(userId);
+                return Ok(await _cartService.Get(cartId));
             }
             catch (RedisKeyNotFoundException)
             {
@@ -123,6 +125,20 @@ namespace NRedi2Read.Controllers
             await _cartService.Checkout(cartId);
 
             return Ok("Cart Checked out");
+        }
+
+        [HttpGet]
+        [Route("getByUserId")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetForUserId([FromQuery]string userId)
+        {
+            var cart = await _cartService.GetCartForUser(userId);
+            if(cart == null)
+            {
+                var cartId = await _cartService.Create(userId);
+                cart = await _cartService.Get(cartId);
+            }
+            return Ok(cart);
         }
     }
 }
